@@ -1,0 +1,12 @@
+[package]
+name = "show"
+version = "0.1.0"
+authors = ["Hatter Jiang <jht5945@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+argparse = "0.2.2"
+term = "0.5.2"
+rust_util = { git = "https://github.com/jht5945/rust_util" }
+reqwest = "0.9.19"
+json = "0.11.14"
