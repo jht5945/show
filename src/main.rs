@@ -67,6 +67,20 @@ fn show_listen_udp(verbose: bool) -> XResult<()> {
     }
 }
 
+fn show_wifi_info(verbose: bool) -> XResult<()> {
+    if ! is_macos() {
+        return Err(new_box_error("Only supports macOS."));
+    }
+    run_command(&vec!["/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", "-I"], verbose)
+}
+
+fn show_wifi_scan(verbose: bool) -> XResult<()> {
+    if ! is_macos() {
+        return Err(new_box_error("Only supports macOS."));
+    }
+    run_command(&vec!["/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", "-s"], verbose)
+}
+
 fn show_install_brew(verbose: bool) -> XResult<()> {
     if ! is_macos() {
         return Err(new_box_error("Only supports macOS."));
@@ -142,6 +156,8 @@ fn main() -> XResult<()> {
         "install_ports" => show_install_ports(verbose)?,
         "install_sdkman" => show_install_sdkman(verbose)?,
         "install_dart" => show_install_dart(verbose)?,
+        "wifi_info" => show_wifi_info(verbose)?,
+        "wifi_scan" => show_wifi_scan(verbose)?,
         unknown => print_message(MessageType::ERROR, &format!("Unknown command: {}", unknown)),
     }
     Ok(())
