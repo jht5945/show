@@ -77,6 +77,21 @@ fn show_listen_udp(verbose: bool) -> XResult<()> {
     Ok(())
 }
 
+fn show_install_brew(verbose: bool) -> XResult<()> {
+    let mut cmd: Command;
+    if is_macos() {
+        if verbose {
+            print_message(MessageType::INFO, r#"Run command: /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)""#);
+        }
+        cmd = Command::new("/usr/bin/ruby");
+        cmd.args(&["-e", r#""$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)""#]);
+    } else {
+        return Err(new_box_error("Only supports macOS."));
+    }
+    run_command_and_wait(&mut cmd)?;
+    Ok(())
+}
+
 
 fn main() -> XResult<()> {
     let mut version = false;
@@ -110,6 +125,7 @@ fn main() -> XResult<()> {
         "ip" => show_ip(verbose)?,
         "listen_tcp" => show_listen_tcp(verbose)?,
         "listen_udp" => show_listen_udp(verbose)?,
+        "install_brew" => show_install_brew(verbose)?,
         unknown => print_message(MessageType::ERROR, &format!("Unknown command: {}", unknown)),
     }
     Ok(())
