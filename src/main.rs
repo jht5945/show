@@ -74,6 +74,36 @@ fn show_install_brew(verbose: bool) -> XResult<()> {
     run_command(&vec!["/usr/bin/ruby", "-e", r#""$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)""#], verbose)
 }
 
+fn show_install_jenv(verbose: bool) -> XResult<()> {
+    if ! is_macos() {
+        return Err(new_box_error("Only supports macOS."));
+    }
+    run_command(&vec!["sh", "-c", "curl -L -s get.jenv.io | bash"], verbose)
+}
+
+fn show_install_ports(_verbose: bool) -> XResult<()> {
+    if ! is_macos() {
+        return Err(new_box_error("Only supports macOS."));
+    }
+    print_message(MessageType::OK, "Please access: https://www.macports.org/install.php");
+    Ok(())
+}
+
+fn show_install_sdkman(verbose: bool) -> XResult<()> {
+    if ! is_macos() {
+        return Err(new_box_error("Only supports macOS."));
+    }
+    run_command(&vec!["sh", "-c", r#""curl -s "https://get.sdkman.io" | bash""#], verbose)
+}
+
+fn show_install_dart(_verbose: bool) -> XResult<()> {
+    if ! is_macos() {
+        return Err(new_box_error("Only supports macOS."));
+    }
+    print_message(MessageType::OK, "Please run command:\n$ brew tap dart-lang/dart\n$ brew install dart");
+    Ok(())
+}
+
 
 fn main() -> XResult<()> {
     let mut version = false;
@@ -108,6 +138,10 @@ fn main() -> XResult<()> {
         "listen_tcp" => show_listen_tcp(verbose)?,
         "listen_udp" => show_listen_udp(verbose)?,
         "install_brew" => show_install_brew(verbose)?,
+        "install_jenv" => show_install_jenv(verbose)?,
+        "install_ports" => show_install_ports(verbose)?,
+        "install_sdkman" => show_install_sdkman(verbose)?,
+        "install_dart" => show_install_dart(verbose)?,
         unknown => print_message(MessageType::ERROR, &format!("Unknown command: {}", unknown)),
     }
     Ok(())
