@@ -81,6 +81,13 @@ fn show_wifi_scan(verbose: bool) -> XResult<()> {
     run_command(&vec!["/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", "-s"], verbose)
 }
 
+fn show_list_java(verbose: bool) -> XResult<()> {
+    if ! is_macos() {
+        return Err(new_box_error("Only supports macOS."));
+    }
+    run_command(&vec!["/usr/libexec/java_home", "-V"], verbose)
+}
+
 fn show_install_brew(verbose: bool) -> XResult<()> {
     if ! is_macos() {
         return Err(new_box_error("Only supports macOS."));
@@ -149,6 +156,7 @@ fn main() -> XResult<()> {
 
     match cmd.as_str() {
         "ip" => show_ip(verbose)?,
+        "list_java" => show_list_java(verbose)?,
         "listen_tcp" => show_listen_tcp(verbose)?,
         "listen_udp" => show_listen_udp(verbose)?,
         "install_brew" => show_install_brew(verbose)?,
