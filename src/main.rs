@@ -41,6 +41,7 @@ fn main() -> XResult<()> {
     let mut verbose = false;
     let mut cmd = String::new();
     {
+        // sub command: https://github.com/tailhook/rust-argparse/blob/master/examples/subcommands.rs
         let mut ap = ArgumentParser::new();
         ap.set_description("show - command line tool.");
         ap.refer(&mut version).add_option(&["-v", "--version"], StoreTrue, "Print version");
