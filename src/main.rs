@@ -35,61 +35,43 @@ fn show_ip(verbose: bool) -> XResult<()> {
     Ok(())
 }
 
-fn show_listen_tcp(verbose: bool) -> XResult<()> {
-    let mut cmd: Command;
-    if is_linux() {
-        if verbose {
-            print_message(MessageType::INFO, "Run command: netstat -ltnp");
-        }
-        cmd = Command::new("netstat");
-        cmd.args(&["-ltnp"]);
-    } else if is_macos() {
-        if verbose {
-            print_message(MessageType::INFO, "Run command: lsof -iTCP -sTCP:LISTEN -n -P");
-        }
-        cmd = Command::new("lsof");
-        cmd.args(&["-iTCP", "-sTCP:LISTEN", "-n", "-P"]);
-    } else {
-        return Err(new_box_error("Not linux or macos."))
+fn run_command(cmd_args: &Vec<&str>, verbose: bool) -> XResult<()> {
+    if verbose {
+        print_message(MessageType::INFO, &format!("Run command: {}", cmd_args.join(" ")));
+    }
+    let mut cmd = Command::new(cmd_args[0]);
+    for i in 1..cmd_args.len() {
+        cmd.arg(cmd_args[i]);
     }
     run_command_and_wait(&mut cmd)?;
     Ok(())
+}
+
+fn show_listen_tcp(verbose: bool) -> XResult<()> {
+    if is_linux() {
+        return run_command(&vec!["netstat", "-ltnp"], verbose);
+    } else if is_macos() {
+        return run_command(&vec!["lsof", "-iTCP", "-sTCP:LISTEN", "-n", "-P"], verbose);
+    } else {
+        return Err(new_box_error("Not linux or macos."))
+    }
 }
 
 fn show_listen_udp(verbose: bool) -> XResult<()> {
-    let mut cmd: Command;
     if is_linux() {
-        if verbose {
-            print_message(MessageType::INFO, "Run command: netstat -lunp");
-        }
-        cmd = Command::new("netstat");
-        cmd.args(&["-lunp"]);
+        return run_command(&vec!["netstat", "-lunp"], verbose);
     } else if is_macos() {
-        if verbose {
-            print_message(MessageType::INFO, "Run command: lsof -iUDP -n -P");
-        }
-        cmd = Command::new("lsof");
-        cmd.args(&["-iUDP", "-n", "-P"]);
+        return run_command(&vec!["lsof", "-iUDP", "-n", "-P"], verbose);
     } else {
-        return Err(new_box_error("Not linux or macos."))
+        return Err(new_box_error("Not linux or macos."));
     }
-    run_command_and_wait(&mut cmd)?;
-    Ok(())
 }
 
 fn show_install_brew(verbose: bool) -> XResult<()> {
-    let mut cmd: Command;
-    if is_macos() {
-        if verbose {
-            print_message(MessageType::INFO, r#"Run command: /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)""#);
-        }
-        cmd = Command::new("/usr/bin/ruby");
-        cmd.args(&["-e", r#""$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)""#]);
-    } else {
+    if ! is_macos() {
         return Err(new_box_error("Only supports macOS."));
     }
-    run_command_and_wait(&mut cmd)?;
-    Ok(())
+    run_command(&vec!["/usr/bin/ruby", "-e", r#""$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)""#], verbose)
 }
 
 
