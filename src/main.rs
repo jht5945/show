@@ -2,9 +2,9 @@ extern crate argparse;
 extern crate rust_util;
 extern crate json;
 
-// use std::{
-    
-// };
+use std::{
+    process::Command,
+};
 
 use argparse::{ArgumentParser, StoreTrue, Store};
 use rust_util::*;
@@ -32,6 +32,48 @@ fn show_ip(verbose: bool) -> XResult<()> {
     } else {
         print_message(MessageType::OK, &format!("Your IP address is: {}", ip_json_object["ip"].to_string()));
     }
+    Ok(())
+}
+
+fn show_listen_tcp(verbose: bool) -> XResult<()> {
+    let mut cmd: Command;
+    if is_linux() {
+        if verbose {
+            print_message(MessageType::INFO, "Run command: netstat -ltnp");
+        }
+        cmd = Command::new("netstat");
+        cmd.args(&["-ltnp"]);
+    } else if is_macos() {
+        if verbose {
+            print_message(MessageType::INFO, "Run command: lsof -iTCP -sTCP:LISTEN -n -P");
+        }
+        cmd = Command::new("lsof");
+        cmd.args(&["-iTCP", "-sTCP:LISTEN", "-n", "-P"]);
+    } else {
+        return Err(new_box_error("Not linux or macos."))
+    }
+    run_command_and_wait(&mut cmd)?;
+    Ok(())
+}
+
+fn show_listen_udp(verbose: bool) -> XResult<()> {
+    let mut cmd: Command;
+    if is_linux() {
+        if verbose {
+            print_message(MessageType::INFO, "Run command: netstat -lunp");
+        }
+        cmd = Command::new("netstat");
+        cmd.args(&["-lunp"]);
+    } else if is_macos() {
+        if verbose {
+            print_message(MessageType::INFO, "Run command: lsof -iUDP -n -P");
+        }
+        cmd = Command::new("lsof");
+        cmd.args(&["-iUDP", "-n", "-P"]);
+    } else {
+        return Err(new_box_error("Not linux or macos."))
+    }
+    run_command_and_wait(&mut cmd)?;
     Ok(())
 }
 
@@ -66,6 +108,8 @@ fn main() -> XResult<()> {
 
     match cmd.as_str() {
         "ip" => show_ip(verbose)?,
+        "listen_tcp" => show_listen_tcp(verbose)?,
+        "listen_udp" => show_listen_udp(verbose)?,
         unknown => print_message(MessageType::ERROR, &format!("Unknown command: {}", unknown)),
     }
     Ok(())
