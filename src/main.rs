@@ -51,7 +51,7 @@ fn show_time(verbose: bool) -> XResult<()> {
     }
     // https://docs.rs/chrono/0.4.7/chrono/format/strftime/index.html
     let local: DateTime<Local> = Local::now();
-    print_message(MessageType::OK, &format!("Local time is: {}", local.format("%Y/%m/%d %H:%M:%S.%3f %z").to_string()));
+    print_message(MessageType::OK, &format!("Local  time is: {}", local.format("%Y/%m/%d %H:%M:%S.%3f %z").to_string()));
     Ok(())
 }
 
