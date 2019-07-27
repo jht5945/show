@@ -1,12 +1,14 @@
 extern crate argparse;
 extern crate rust_util;
 extern crate json;
+extern crate chrono;
 
 use std::{
     process::Command,
 };
 
 use argparse::{ArgumentParser, StoreTrue, Store};
+use chrono::prelude::*;
 use rust_util::*;
 
 const VERSION: &str = "0.1";
@@ -30,8 +32,26 @@ fn show_ip(verbose: bool) -> XResult<()> {
     if ip.is_null() {
         print_message(MessageType::ERROR, "Get IP failed.");
     } else {
-        print_message(MessageType::OK, &format!("Your IP address is: {}", ip_json_object["ip"].to_string()));
+        print_message(MessageType::OK, &format!("Your IP address is: {}", ip.to_string()));
     }
+    Ok(())
+}
+
+fn show_time(verbose: bool) -> XResult<()> {
+    let resp = reqwest::get("https://hatter.ink/time/time.jsonp")?.text()?;
+    if verbose {
+        print_message(MessageType::INFO, &format!("Received response: {}", resp));
+    }
+    let time_json_object = json::parse(&resp)?;
+    let date_time = &time_json_object["datetime"];
+    if date_time.is_null() {
+        print_message(MessageType::ERROR, "Get remote time failed.");
+    } else {
+        print_message(MessageType::OK, &format!("Remote time is: {}", date_time.to_string()));
+    }
+    // https://docs.rs/chrono/0.4.7/chrono/format/strftime/index.html
+    let local: DateTime<Local> = Local::now();
+    print_message(MessageType::OK, &format!("Local time is: {}", local.format("%Y/%m/%d %H:%M:%S.%3f %z").to_string()));
     Ok(())
 }
 
@@ -177,6 +197,7 @@ fn main() -> XResult<()> {
 
     match cmd.as_str() {
         "ip" => show_ip(verbose)?,
+        "time" => show_time(verbose)?,
         "java" => show_java(verbose)?,
         "route" => show_route(verbose)?,
         "network" => show_network(verbose)?,
