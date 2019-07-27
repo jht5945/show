@@ -47,6 +47,27 @@ fn run_command(cmd_args: &Vec<&str>, verbose: bool) -> XResult<()> {
     Ok(())
 }
 
+fn show_route(verbose: bool) -> XResult<()> {
+    if ! is_macos() {
+        return Err(new_box_error("Only supports macOS."));
+    }
+    run_command(&vec!["netstat", "-nr"], verbose)
+}
+
+fn show_network(verbose: bool) -> XResult<()> {
+    if ! is_macos() {
+        return Err(new_box_error("Only supports macOS."));
+    }
+    run_command(&vec!["networksetup", "-listallhardwareports"], verbose)
+}
+
+fn show_java(verbose: bool) -> XResult<()> {
+    if ! is_macos() {
+        return Err(new_box_error("Only supports macOS."));
+    }
+    run_command(&vec!["/usr/libexec/java_home", "-V"], verbose)
+}
+
 fn show_listen_tcp(verbose: bool) -> XResult<()> {
     if is_linux() {
         return run_command(&vec!["netstat", "-ltnp"], verbose);
@@ -156,6 +177,9 @@ fn main() -> XResult<()> {
 
     match cmd.as_str() {
         "ip" => show_ip(verbose)?,
+        "java" => show_java(verbose)?,
+        "route" => show_route(verbose)?,
+        "network" => show_network(verbose)?,
         "list_java" => show_list_java(verbose)?,
         "listen_tcp" => show_listen_tcp(verbose)?,
         "listen_udp" => show_listen_udp(verbose)?,
