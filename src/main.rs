@@ -177,7 +177,7 @@ fn main() -> XResult<()> {
         ap.set_description("show - command line tool.");
         ap.refer(&mut version).add_option(&["-v", "--version"], StoreTrue, "Print version");
         ap.refer(&mut verbose).add_option(&["-V", "--verbose"], StoreTrue, "Verbose print");
-        ap.refer(&mut cmd).add_argument("CMD", Store, "Command");
+        ap.refer(&mut cmd).add_argument("CMD", Store, "Command, use ':::' show all");
         ap.parse_args_or_exit();
     }
     
@@ -196,6 +196,15 @@ fn main() -> XResult<()> {
     }
 
     match cmd.as_str() {
+        ":::" => {
+            for c in vec!["ip", "time", "java", "route", "network",
+                          "list_java",
+                          "listen_tcp", "listen_udp",
+                          "install_brew", "install_jenv", "install_ports", "install_sdkman", "install_dart",
+                          "wifi_info", "wifi_scan"] {
+                println!("- {}", c);
+            }
+        },
         "ip" => show_ip(verbose)?,
         "time" => show_time(verbose)?,
         "java" => show_java(verbose)?,
