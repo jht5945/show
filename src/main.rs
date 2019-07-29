@@ -81,13 +81,6 @@ fn show_network(verbose: bool) -> XResult<()> {
     run_command(&vec!["networksetup", "-listallhardwareports"], verbose)
 }
 
-fn show_java(verbose: bool) -> XResult<()> {
-    if ! is_macos() {
-        return Err(new_box_error("Only supports macOS."));
-    }
-    run_command(&vec!["/usr/libexec/java_home", "-V"], verbose)
-}
-
 fn show_listen_tcp(verbose: bool) -> XResult<()> {
     if is_linux() {
         return run_command(&vec!["netstat", "-ltnp"], verbose);
@@ -166,6 +159,21 @@ fn show_install_dart(_verbose: bool) -> XResult<()> {
     Ok(())
 }
 
+#[derive(Clone, Debug)]
+enum CommandSupportOS {
+    Linux,
+    MacOS,
+}
+
+type FnCallCommand = fn(bool) -> XResult<()>;
+
+struct CommandInfo<'a> {
+    name: &'a str,
+    description: &'a str,
+    support_os: Vec<CommandSupportOS>,
+    command_fn: FnCallCommand,
+}
+
 
 fn main() -> XResult<()> {
     let mut version = false;
@@ -195,24 +203,63 @@ fn main() -> XResult<()> {
         print_message(MessageType::INFO, &format!("Command: {}", &cmd));
     }
 
-    match cmd.as_str() {
+    let commands = vec![
+        CommandInfo {
+            name: "ip",
+            description: "Show public IP",
+            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
+            command_fn: show_ip,
+        },
+        CommandInfo {
+            name: "time",
+            description: "Show time",
+            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
+            command_fn: show_time,
+        },
+        CommandInfo {
+            name: "route",
+            description: "Show route",
+            support_os: vec![CommandSupportOS::MacOS],
+            command_fn: show_route,
+        },
+        CommandInfo {
+            name: "network",
+            description: "Show network",
+            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
+            command_fn: show_network,
+        },
+        CommandInfo {
+            name: "list_java",
+            description: "Show java list",
+            support_os: vec![CommandSupportOS::MacOS],
+            command_fn: show_list_java,
+        },
+        CommandInfo {
+            name: "listen_tcp",
+            description: "Show tcp listen",
+            support_os: vec![CommandSupportOS::MacOS],
+            command_fn: show_listen_tcp,
+        },
+        CommandInfo {
+            name: "listen_udp",
+            description: "Show udp listen",
+            support_os: vec![CommandSupportOS::MacOS],
+            command_fn: show_listen_udp,
+        },
+    ];
+
+    let cmd_str = cmd.as_str();
+    match cmd_str {
         ":::" => {
-            for c in vec!["ip", "time", "java", "route", "network",
-                          "list_java",
-                          "listen_tcp", "listen_udp",
-                          "install_brew", "install_jenv", "install_ports", "install_sdkman", "install_dart",
-                          "wifi_info", "wifi_scan"] {
-                println!("- {}", c);
+            for c in commands {
+                //let supports = c.support_os.iter().map(|x| match x {
+                //    CommandSupportOS::Linux => "Linux",
+                //    CommandSupportOS::MacOS => "macOS",
+                //});
+                //println!("{} - {} {:?}", c.name, c.description, supports);
+                println!("{} - {}", c.name, c.description);
             }
         },
-        "ip" => show_ip(verbose)?,
-        "time" => show_time(verbose)?,
-        "java" => show_java(verbose)?,
-        "route" => show_route(verbose)?,
-        "network" => show_network(verbose)?,
-        "list_java" => show_list_java(verbose)?,
-        "listen_tcp" => show_listen_tcp(verbose)?,
-        "listen_udp" => show_listen_udp(verbose)?,
         "install_brew" => show_install_brew(verbose)?,
         "install_jenv" => show_install_jenv(verbose)?,
         "install_ports" => show_install_ports(verbose)?,
@@ -220,7 +267,15 @@ fn main() -> XResult<()> {
         "install_dart" => show_install_dart(verbose)?,
         "wifi_info" => show_wifi_info(verbose)?,
         "wifi_scan" => show_wifi_scan(verbose)?,
-        unknown => print_message(MessageType::ERROR, &format!("Unknown command: {}", unknown)),
+        other => {
+            for c in commands {
+                if c.name == cmd_str {
+                    (c.command_fn)(verbose)?;
+                    return Ok(());
+                }
+            }
+            print_message(MessageType::ERROR, &format!("Unknown command: {}", other));
+        },
     }
     Ok(())
 }
