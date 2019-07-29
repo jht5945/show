@@ -237,13 +237,13 @@ fn main() -> XResult<()> {
         CommandInfo {
             name: "listen_tcp",
             description: "Show tcp listen",
-            support_os: vec![CommandSupportOS::MacOS],
+            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
             command_fn: show_listen_tcp,
         },
         CommandInfo {
             name: "listen_udp",
             description: "Show udp listen",
-            support_os: vec![CommandSupportOS::MacOS],
+            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
             command_fn: show_listen_udp,
         },
     ];
