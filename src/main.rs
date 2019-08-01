@@ -159,6 +159,10 @@ fn show_install_dart(_verbose: bool) -> XResult<()> {
     Ok(())
 }
 
+fn show_cal(verbose: bool) -> XResult<()> {
+    run_command(&vec!["cal", "-3"], verbose)
+}
+
 #[derive(Clone, Debug)]
 enum CommandSupportOS {
     Linux,
@@ -215,6 +219,12 @@ fn main() -> XResult<()> {
             description: "Show time",
             support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
             command_fn: show_time,
+        },
+        CommandInfo {
+            name: "cal",
+            description: "Show calendar",
+            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
+            command_fn: show_cal,
         },
         CommandInfo {
             name: "route",
