@@ -9,7 +9,13 @@ use std::{
 
 use argparse::{ArgumentParser, StoreTrue, Store};
 use chrono::prelude::*;
-use rust_util::*;
+use rust_util::{
+    XResult,
+    new_box_error,
+    util_os::*,
+    util_cmd::*,
+    util_msg::*,
+};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const GIT_HASH: &str = env!("GIT_HASH");
