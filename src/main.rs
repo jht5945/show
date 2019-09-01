@@ -3,11 +3,13 @@ extern crate rust_util;
 extern crate json;
 extern crate chrono;
 
+mod cmd;
+mod opt;
+
 use std::{
     process::Command,
 };
 
-use argparse::{ArgumentParser, StoreTrue, Store};
 use chrono::prelude::*;
 use rust_util::{
     XResult,
@@ -16,6 +18,8 @@ use rust_util::{
     util_cmd::*,
     util_msg::*,
 };
+use cmd::*;
+use opt::*;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const GIT_HASH: &str = env!("GIT_HASH");
@@ -170,48 +174,22 @@ fn show_cal(verbose: bool) -> XResult<()> {
     run_command(&vec!["cal", "-3"], verbose)
 }
 
-#[derive(Clone, Debug)]
-enum CommandSupportOS {
-    Linux,
-    MacOS,
-}
-
-type FnCallCommand = fn(bool) -> XResult<()>;
-
-struct CommandInfo<'a> {
-    name: &'a str,
-    description: &'a str,
-    support_os: Vec<CommandSupportOS>,
-    command_fn: FnCallCommand,
-}
-
 
 fn main() -> XResult<()> {
-    let mut version = false;
-    let mut verbose = false;
-    let mut cmd = String::new();
-    {
-        // sub command: https://github.com/tailhook/rust-argparse/blob/master/examples/subcommands.rs
-        let mut ap = ArgumentParser::new();
-        ap.set_description("show - command line tool.");
-        ap.refer(&mut version).add_option(&["-v", "--version"], StoreTrue, "Print version");
-        ap.refer(&mut verbose).add_option(&["-V", "--verbose"], StoreTrue, "Verbose print");
-        ap.refer(&mut cmd).add_argument("CMD", Store, "Command, use ':::' show all");
-        ap.parse_args_or_exit();
-    }
+    let options = Options::parse_args_static();
     
-    if version {
+    if options.version {
         print_version();
         return Ok(());
     }
 
-    if cmd.len() == 0 {
+    if options.cmd.len() == 0 {
         print_message(MessageType::ERROR, "Use show --help print usage.");
         return Ok(());
     }
 
-    if verbose {
-        print_message(MessageType::INFO, &format!("Command: {}", &cmd));
+    if options.verbose {
+        print_message(MessageType::INFO, &format!("Command: {}", &options.cmd));
     }
 
     let commands = vec![
@@ -307,7 +285,7 @@ fn main() -> XResult<()> {
         },
     ];
 
-    let cmd_str = cmd.as_str();
+    let cmd_str = options.cmd.as_str();
     match cmd_str {
         ":::" => {
             for c in commands {
@@ -327,7 +305,7 @@ fn main() -> XResult<()> {
         other => {
             for c in commands {
                 if c.name == cmd_str {
-                    (c.command_fn)(verbose)?;
+                    (c.command_fn)(options.verbose)?;
                     return Ok(());
                 }
             }
