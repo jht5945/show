@@ -79,9 +79,6 @@ fn run_command(cmd_args: &Vec<&str>, verbose: bool) -> XResult<()> {
 }
 
 fn show_route(verbose: bool) -> XResult<()> {
-    if ! is_macos() {
-        return Err(new_box_error("Only supports macOS."));
-    }
     run_command(&vec!["netstat", "-nr"], verbose)
 }
 
@@ -214,13 +211,13 @@ fn main() -> XResult<()> {
         CommandInfo {
             name: "route",
             description: "Show route",
-            support_os: vec![CommandSupportOS::MacOS],
+            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
             command_fn: show_route,
         },
         CommandInfo {
             name: "network",
             description: "Show network",
-            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
+            support_os: vec![CommandSupportOS::MacOS],
             command_fn: show_network,
         },
         CommandInfo {
