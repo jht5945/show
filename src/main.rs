@@ -3,29 +3,34 @@ extern crate rust_util;
 extern crate json;
 extern crate chrono;
 
+mod cmd;
+mod opt;
+
 use std::{
     process::Command,
 };
 
-use argparse::{ArgumentParser, StoreTrue, Store};
 use chrono::prelude::*;
 use rust_util::{
     XResult,
     new_box_error,
-    util_msg::*,
-    util_cmd::*,
     util_os::*,
+    util_cmd::*,
+    util_msg::*,
 };
+use cmd::*;
+use opt::*;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+const GIT_HASH: &str = env!("GIT_HASH");
 
 fn print_version() {
-    print!(r#"show {}
+    print!(r#"show {} - {}
 Copyright (C) 2019 Hatter Jiang.
 License MIT <https://opensource.org/licenses/MIT>
 
 Written by Hatter Jiang
-"#, VERSION);
+"#, VERSION, &GIT_HASH[0..7]);
 }
 
 fn show_ip(verbose: bool) -> XResult<()> {
@@ -74,9 +79,6 @@ fn run_command(cmd_args: &Vec<&str>, verbose: bool) -> XResult<()> {
 }
 
 fn show_route(verbose: bool) -> XResult<()> {
-    if ! is_macos() {
-        return Err(new_box_error("Only supports macOS."));
-    }
     run_command(&vec!["netstat", "-nr"], verbose)
 }
 
@@ -85,13 +87,6 @@ fn show_network(verbose: bool) -> XResult<()> {
         return Err(new_box_error("Only supports macOS."));
     }
     run_command(&vec!["networksetup", "-listallhardwareports"], verbose)
-}
-
-fn show_java(verbose: bool) -> XResult<()> {
-    if ! is_macos() {
-        return Err(new_box_error("Only supports macOS."));
-    }
-    run_command(&vec!["/usr/libexec/java_home", "-V"], verbose)
 }
 
 fn show_listen_tcp(verbose: bool) -> XResult<()> {
@@ -172,52 +167,147 @@ fn show_install_dart(_verbose: bool) -> XResult<()> {
     Ok(())
 }
 
+fn show_cal(verbose: bool) -> XResult<()> {
+    run_command(&vec!["cal", "-3"], verbose)
+}
+
 
 fn main() -> XResult<()> {
-    let mut version = false;
-    let mut verbose = false;
-    let mut cmd = String::new();
-    {
-        // sub command: https://github.com/tailhook/rust-argparse/blob/master/examples/subcommands.rs
-        let mut ap = ArgumentParser::new();
-        ap.set_description("show - command line tool.");
-        ap.refer(&mut version).add_option(&["-v", "--version"], StoreTrue, "Print version");
-        ap.refer(&mut verbose).add_option(&["-V", "--verbose"], StoreTrue, "Verbose print");
-        ap.refer(&mut cmd).add_argument("CMD", Store, "Command");
-        ap.parse_args_or_exit();
-    }
+    let options = Options::parse_args_static();
     
-    if version {
+    if options.version {
         print_version();
         return Ok(());
     }
 
-    if cmd.len() == 0 {
+    if options.cmd.len() == 0 {
         print_message(MessageType::ERROR, "Use show --help print usage.");
         return Ok(());
     }
 
-    if verbose {
-        print_message(MessageType::INFO, &format!("Command: {}", &cmd));
+    if options.verbose {
+        print_message(MessageType::INFO, &format!("Command: {}", &options.cmd));
     }
 
-    match cmd.as_str() {
-        "ip" => show_ip(verbose)?,
-        "time" => show_time(verbose)?,
-        "java" => show_java(verbose)?,
-        "route" => show_route(verbose)?,
-        "network" => show_network(verbose)?,
-        "list_java" => show_list_java(verbose)?,
-        "listen_tcp" => show_listen_tcp(verbose)?,
-        "listen_udp" => show_listen_udp(verbose)?,
-        "install_brew" => show_install_brew(verbose)?,
-        "install_jenv" => show_install_jenv(verbose)?,
-        "install_ports" => show_install_ports(verbose)?,
-        "install_sdkman" => show_install_sdkman(verbose)?,
-        "install_dart" => show_install_dart(verbose)?,
-        "wifi_info" => show_wifi_info(verbose)?,
-        "wifi_scan" => show_wifi_scan(verbose)?,
-        unknown => print_message(MessageType::ERROR, &format!("Unknown command: {}", unknown)),
+    let commands = vec![
+        CommandInfo {
+            name: "ip",
+            description: "Show public IP",
+            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
+            command_fn: show_ip,
+        },
+        CommandInfo {
+            name: "time",
+            description: "Show time",
+            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
+            command_fn: show_time,
+        },
+        CommandInfo {
+            name: "cal",
+            description: "Show calendar",
+            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
+            command_fn: show_cal,
+        },
+        CommandInfo {
+            name: "route",
+            description: "Show route",
+            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
+            command_fn: show_route,
+        },
+        CommandInfo {
+            name: "network",
+            description: "Show network",
+            support_os: vec![CommandSupportOS::MacOS],
+            command_fn: show_network,
+        },
+        CommandInfo {
+            name: "list_java",
+            description: "Show java list",
+            support_os: vec![CommandSupportOS::MacOS],
+            command_fn: show_list_java,
+        },
+        CommandInfo {
+            name: "listen_tcp",
+            description: "Show tcp listen",
+            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
+            command_fn: show_listen_tcp,
+        },
+        CommandInfo {
+            name: "listen_udp",
+            description: "Show udp listen",
+            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
+            command_fn: show_listen_udp,
+        },
+        CommandInfo {
+            name: "install_brew",
+            description: "Install brew",
+            support_os: vec![CommandSupportOS::MacOS],
+            command_fn: show_install_brew,
+        },
+        CommandInfo {
+            name: "install_jenv",
+            description: "Install jenv",
+            support_os: vec![CommandSupportOS::MacOS],
+            command_fn: show_install_jenv,
+        },
+        CommandInfo {
+            name: "install_ports",
+            description: "Install ports",
+            support_os: vec![CommandSupportOS::MacOS],
+            command_fn: show_install_ports,
+        },
+        CommandInfo {
+            name: "install_sdkman",
+            description: "Install sdkman",
+            support_os: vec![CommandSupportOS::MacOS],
+            command_fn: show_install_sdkman,
+        },
+        CommandInfo {
+            name: "install_dart",
+            description: "Install dart",
+            support_os: vec![CommandSupportOS::MacOS],
+            command_fn: show_install_dart,
+        },
+        CommandInfo {
+            name: "wifi_info",
+            description: "Show wifi info",
+            support_os: vec![CommandSupportOS::MacOS],
+            command_fn: show_wifi_info,
+        },
+        CommandInfo {
+            name: "wifi_scan",
+            description: "Show wifi scan",
+            support_os: vec![CommandSupportOS::MacOS],
+            command_fn: show_wifi_scan,
+        },
+    ];
+
+    let cmd_str = options.cmd.as_str();
+    match cmd_str {
+        ":::" => {
+            for c in commands {
+                let mut support_os_str = String::new();
+                for i in 0..c.support_os.len() {
+                    support_os_str.push_str(match c.support_os[i] {
+                        CommandSupportOS::Linux => "Linux",
+                        CommandSupportOS::MacOS => "macOS",
+                    });
+                    if i < c.support_os.len() - 1 {
+                        support_os_str.push_str(", ");
+                    }
+                }
+                println!("{} - {}  [{}]", c.name, c.description, &support_os_str);
+            }
+        },
+        other => {
+            for c in commands {
+                if c.name == cmd_str {
+                    (c.command_fn)(options.verbose)?;
+                    return Ok(());
+                }
+            }
+            print_message(MessageType::ERROR, &format!("Unknown command: {}", other));
+        },
     }
     Ok(())
 }
