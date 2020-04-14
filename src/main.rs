@@ -64,14 +64,14 @@ fn show_time(verbose: bool) -> XResult<()> {
     Ok(())
 }
 
-fn run_command(cmd_args: &Vec<&str>, verbose: bool) -> XResult<()> {
+fn run_command(cmd_args: &[&str], verbose: bool) -> XResult<()> {
     if verbose {
         print_message(MessageType::INFO, &format!("Run command: {}", cmd_args.join(" ")));
     }
     let mut cmd = Command::new(cmd_args[0]);
-    for i in 1..cmd_args.len() {
-        cmd.arg(cmd_args[i]);
-    }
+    cmd_args.iter().skip(1).for_each(|c| {
+        cmd.arg(c);
+    });
     run_command_and_wait(&mut cmd)?;
     Ok(())
 }
@@ -178,7 +178,7 @@ fn main() -> XResult<()> {
         return Ok(());
     }
 
-    if options.cmd.len() == 0 {
+    if options.cmd.is_empty() {
         print_message(MessageType::ERROR, "Use show --help print usage.");
         return Ok(());
     }
