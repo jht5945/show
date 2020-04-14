@@ -6,9 +6,7 @@ extern crate chrono;
 mod cmd;
 mod opt;
 
-use std::{
-    process::Command,
-};
+use std::process::Command;
 
 use chrono::prelude::*;
 use rust_util::{
@@ -91,21 +89,21 @@ fn show_network(verbose: bool) -> XResult<()> {
 
 fn show_listen_tcp(verbose: bool) -> XResult<()> {
     if is_linux() {
-        return run_command(&vec!["netstat", "-ltnp"], verbose);
+        run_command(&vec!["netstat", "-ltnp"], verbose)
     } else if is_macos() {
-        return run_command(&vec!["lsof", "-iTCP", "-sTCP:LISTEN", "-n", "-P"], verbose);
+        run_command(&vec!["lsof", "-iTCP", "-sTCP:LISTEN", "-n", "-P"], verbose)
     } else {
-        return Err(new_box_error("Not linux or macos."))
+        Err(new_box_error("Not linux or macos."))
     }
 }
 
 fn show_listen_udp(verbose: bool) -> XResult<()> {
     if is_linux() {
-        return run_command(&vec!["netstat", "-lunp"], verbose);
+        run_command(&vec!["netstat", "-lunp"], verbose)
     } else if is_macos() {
-        return run_command(&vec!["lsof", "-iUDP", "-n", "-P"], verbose);
+        run_command(&vec!["lsof", "-iUDP", "-n", "-P"], verbose)
     } else {
-        return Err(new_box_error("Not linux or macos."));
+        Err(new_box_error("Not linux or macos."))
     }
 }
 
@@ -189,93 +187,80 @@ fn main() -> XResult<()> {
         print_message(MessageType::INFO, &format!("Command: {}", &options.cmd));
     }
 
+    let linux_and_macos = vec![CommandSupportOS::Linux, CommandSupportOS::MacOS];
+
     let commands = vec![
-        CommandInfo {
-            name: "ip",
+        CommandInfo { name: "ip",
             description: "Show public IP",
-            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
+            support_os: linux_and_macos.clone(),
             command_fn: show_ip,
         },
-        CommandInfo {
-            name: "time",
+        CommandInfo { name: "time",
             description: "Show time",
-            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
+            support_os: linux_and_macos.clone(),
             command_fn: show_time,
         },
-        CommandInfo {
-            name: "cal",
+        CommandInfo { name: "cal",
             description: "Show calendar",
-            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
+            support_os: linux_and_macos.clone(),
             command_fn: show_cal,
         },
-        CommandInfo {
-            name: "route",
+        CommandInfo { name: "route",
             description: "Show route",
-            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
+            support_os: linux_and_macos.clone(),
             command_fn: show_route,
         },
-        CommandInfo {
-            name: "network",
+        CommandInfo { name: "network",
             description: "Show network",
             support_os: vec![CommandSupportOS::MacOS],
             command_fn: show_network,
         },
-        CommandInfo {
-            name: "list_java",
+        CommandInfo { name: "list_java",
             description: "Show java list",
             support_os: vec![CommandSupportOS::MacOS],
             command_fn: show_list_java,
         },
-        CommandInfo {
-            name: "listen_tcp",
+        CommandInfo { name: "listen_tcp",
             description: "Show tcp listen",
-            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
+            support_os: linux_and_macos.clone(),
             command_fn: show_listen_tcp,
         },
-        CommandInfo {
-            name: "listen_udp",
+        CommandInfo { name: "listen_udp",
             description: "Show udp listen",
-            support_os: vec![CommandSupportOS::Linux, CommandSupportOS::MacOS],
+            support_os: linux_and_macos.clone(),
             command_fn: show_listen_udp,
         },
-        CommandInfo {
-            name: "install_brew",
+        CommandInfo { name: "install_brew",
             description: "Install brew",
             support_os: vec![CommandSupportOS::MacOS],
             command_fn: show_install_brew,
         },
-        CommandInfo {
-            name: "install_jenv",
+        CommandInfo { name: "install_jenv",
             description: "Install jenv",
             support_os: vec![CommandSupportOS::MacOS],
             command_fn: show_install_jenv,
         },
-        CommandInfo {
-            name: "install_ports",
+        CommandInfo { name: "install_ports",
             description: "Install ports",
             support_os: vec![CommandSupportOS::MacOS],
             command_fn: show_install_ports,
         },
-        CommandInfo {
-            name: "install_sdkman",
+        CommandInfo { name: "install_sdkman",
             description: "Install sdkman",
             support_os: vec![CommandSupportOS::MacOS],
             command_fn: show_install_sdkman,
         },
-        CommandInfo {
-            name: "install_dart",
+        CommandInfo { name: "install_dart",
             description: "Install dart",
             support_os: vec![CommandSupportOS::MacOS],
             command_fn: show_install_dart,
         },
-        CommandInfo {
-            name: "wifi_info",
+        CommandInfo { name: "wifi_info",
             description: "Show wifi info",
             support_os: vec![CommandSupportOS::MacOS],
             command_fn: show_wifi_info,
         },
-        CommandInfo {
-            name: "wifi_scan",
+        CommandInfo { name: "wifi_scan",
             description: "Show wifi scan",
             support_os: vec![CommandSupportOS::MacOS],
             command_fn: show_wifi_scan,
@@ -284,29 +269,16 @@ fn main() -> XResult<()> {
 
     let cmd_str = options.cmd.as_str();
     match cmd_str {
-        ":::" => {
-            for c in commands {
-                let mut support_os_str = String::new();
-                for i in 0..c.support_os.len() {
-                    support_os_str.push_str(match c.support_os[i] {
-                        CommandSupportOS::Linux => "Linux",
-                        CommandSupportOS::MacOS => "macOS",
-                    });
-                    if i < c.support_os.len() - 1 {
-                        support_os_str.push_str(", ");
-                    }
-                }
-                println!("{} - {}  [{}]", c.name, c.description, &support_os_str);
-            }
-        },
-        other => {
-            for c in commands {
-                if c.name == cmd_str {
-                    (c.command_fn)(options.verbose)?;
-                    return Ok(());
-                }
-            }
-            print_message(MessageType::ERROR, &format!("Unknown command: {}", other));
+        ":::" => commands.iter().for_each(|c| {
+            let support_os_str = c.support_os.iter().map(|o| match o {
+                CommandSupportOS::Linux => "Linux",
+                CommandSupportOS::MacOS => "macOS",
+            }).collect::<Vec<_>>().join(", ");
+            println!("{} - {}  [{}]", c.name, c.description, &support_os_str);
+        }),
+        other => match commands.iter().filter(|c| c.name == cmd_str).next() {
+            None => print_message(MessageType::ERROR, &format!("Unknown command: {}", other)),
+            Some(c) => (c.command_fn)(options.verbose)?,
         },
     }
     Ok(())
