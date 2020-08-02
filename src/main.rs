@@ -1,4 +1,5 @@
 extern crate argparse;
+#[macro_use]
 extern crate rust_util;
 extern crate json;
 extern crate chrono;
@@ -7,14 +8,12 @@ mod cmd;
 mod opt;
 
 use std::process::Command;
-
 use chrono::prelude::*;
 use rust_util::{
     XResult,
     new_box_error,
     util_os::*,
     util_cmd::*,
-    util_msg::*,
 };
 use cmd::*;
 use opt::*;
@@ -24,7 +23,7 @@ const GIT_HASH: &str = env!("GIT_HASH");
 
 fn print_version() {
     print!(r#"show {} - {}
-Copyright (C) 2019 Hatter Jiang.
+Copyright (C) 2019-2020 Hatter Jiang.
 License MIT <https://opensource.org/licenses/MIT>
 
 Written by Hatter Jiang
@@ -34,14 +33,14 @@ Written by Hatter Jiang
 fn show_ip(verbose: bool) -> XResult<()> {
     let resp = reqwest::get("https://hatter.ink/ip/ip.jsonp")?.text()?;
     if verbose {
-        print_message(MessageType::INFO, &format!("Received response: {}", resp));
+        information!("Received response: {}", resp);
     }
     let ip_json_object = json::parse(&resp)?;
     let ip = &ip_json_object["ip"];
     if ip.is_null() {
-        print_message(MessageType::ERROR, "Get IP failed.");
+        failure!("Get IP failed.");
     } else {
-        print_message(MessageType::OK, &format!("Your IP address is: {}", ip.to_string()));
+        success!("Your IP address is: {}", ip.to_string());
     }
     Ok(())
 }
@@ -49,24 +48,24 @@ fn show_ip(verbose: bool) -> XResult<()> {
 fn show_time(verbose: bool) -> XResult<()> {
     let resp = reqwest::get("https://hatter.ink/time/time.jsonp")?.text()?;
     if verbose {
-        print_message(MessageType::INFO, &format!("Received response: {}", resp));
+        information!("Received response: {}", resp);
     }
     let time_json_object = json::parse(&resp)?;
     let date_time = &time_json_object["datetime"];
     if date_time.is_null() {
-        print_message(MessageType::ERROR, "Get remote time failed.");
+        failure!("Get remote time failed.");
     } else {
-        print_message(MessageType::OK, &format!("Remote time is: {}", date_time.to_string()));
+        success!("Remote time is: {}", date_time.to_string());
     }
     // https://docs.rs/chrono/0.4.7/chrono/format/strftime/index.html
     let local: DateTime<Local> = Local::now();
-    print_message(MessageType::OK, &format!("Local  time is: {}", local.format("%Y/%m/%d %H:%M:%S.%3f %z").to_string()));
+    success!("Local  time is: {}", local.format("%Y/%m/%d %H:%M:%S.%3f %z").to_string());
     Ok(())
 }
 
 fn run_command(cmd_args: &[&str], verbose: bool) -> XResult<()> {
     if verbose {
-        print_message(MessageType::INFO, &format!("Run command: {}", cmd_args.join(" ")));
+        information!("Run command: {}", cmd_args.join(" "));
     }
     let mut cmd = Command::new(cmd_args[0]);
     cmd_args.iter().skip(1).for_each(|c| {
@@ -77,21 +76,21 @@ fn run_command(cmd_args: &[&str], verbose: bool) -> XResult<()> {
 }
 
 fn show_route(verbose: bool) -> XResult<()> {
-    run_command(&vec!["netstat", "-nr"], verbose)
+    run_command(&["netstat", "-nr"], verbose)
 }
 
 fn show_network(verbose: bool) -> XResult<()> {
     if ! is_macos() {
         return Err(new_box_error("Only supports macOS."));
     }
-    run_command(&vec!["networksetup", "-listallhardwareports"], verbose)
+    run_command(&["networksetup", "-listallhardwareports"], verbose)
 }
 
 fn show_listen_tcp(verbose: bool) -> XResult<()> {
     if is_linux() {
-        run_command(&vec!["netstat", "-ltnp"], verbose)
+        run_command(&["netstat", "-ltnp"], verbose)
     } else if is_macos() {
-        run_command(&vec!["lsof", "-iTCP", "-sTCP:LISTEN", "-n", "-P"], verbose)
+        run_command(&["lsof", "-iTCP", "-sTCP:LISTEN", "-n", "-P"], verbose)
     } else {
         Err(new_box_error("Not linux or macos."))
     }
@@ -99,9 +98,9 @@ fn show_listen_tcp(verbose: bool) -> XResult<()> {
 
 fn show_listen_udp(verbose: bool) -> XResult<()> {
     if is_linux() {
-        run_command(&vec!["netstat", "-lunp"], verbose)
+        run_command(&["netstat", "-lunp"], verbose)
     } else if is_macos() {
-        run_command(&vec!["lsof", "-iUDP", "-n", "-P"], verbose)
+        run_command(&["lsof", "-iUDP", "-n", "-P"], verbose)
     } else {
         Err(new_box_error("Not linux or macos."))
     }
@@ -111,42 +110,42 @@ fn show_wifi_info(verbose: bool) -> XResult<()> {
     if ! is_macos() {
         return Err(new_box_error("Only supports macOS."));
     }
-    run_command(&vec!["/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", "-I"], verbose)
+    run_command(&["/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", "-I"], verbose)
 }
 
 fn show_wifi_scan(verbose: bool) -> XResult<()> {
     if ! is_macos() {
         return Err(new_box_error("Only supports macOS."));
     }
-    run_command(&vec!["/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", "-s"], verbose)
+    run_command(&["/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", "-s"], verbose)
 }
 
 fn show_list_java(verbose: bool) -> XResult<()> {
     if ! is_macos() {
         return Err(new_box_error("Only supports macOS."));
     }
-    run_command(&vec!["/usr/libexec/java_home", "-V"], verbose)
+    run_command(&["/usr/libexec/java_home", "-V"], verbose)
 }
 
 fn show_install_brew(verbose: bool) -> XResult<()> {
     if ! is_macos() {
         return Err(new_box_error("Only supports macOS."));
     }
-    run_command(&vec!["/usr/bin/ruby", "-e", r#""$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)""#], verbose)
+    run_command(&["/usr/bin/ruby", "-e", r#""$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)""#], verbose)
 }
 
 fn show_install_jenv(verbose: bool) -> XResult<()> {
     if ! is_macos() {
         return Err(new_box_error("Only supports macOS."));
     }
-    run_command(&vec!["sh", "-c", "curl -L -s get.jenv.io | bash"], verbose)
+    run_command(&["sh", "-c", "curl -L -s get.jenv.io | bash"], verbose)
 }
 
 fn show_install_ports(_verbose: bool) -> XResult<()> {
     if ! is_macos() {
         return Err(new_box_error("Only supports macOS."));
     }
-    print_message(MessageType::OK, "Please access: https://www.macports.org/install.php");
+    success!("Please access: https://www.macports.org/install.php");
     Ok(())
 }
 
@@ -154,19 +153,19 @@ fn show_install_sdkman(verbose: bool) -> XResult<()> {
     if ! is_macos() {
         return Err(new_box_error("Only supports macOS."));
     }
-    run_command(&vec!["sh", "-c", r#""curl -s "https://get.sdkman.io" | bash""#], verbose)
+    run_command(&["sh", "-c", r#""curl -s "https://get.sdkman.io" | bash""#], verbose)
 }
 
 fn show_install_dart(_verbose: bool) -> XResult<()> {
     if ! is_macos() {
         return Err(new_box_error("Only supports macOS."));
     }
-    print_message(MessageType::OK, "Please run command:\n$ brew tap dart-lang/dart\n$ brew install dart");
+    success!("Please run command:\n$ brew tap dart-lang/dart\n$ brew install dart");
     Ok(())
 }
 
 fn show_cal(verbose: bool) -> XResult<()> {
-    run_command(&vec!["cal", "-3"], verbose)
+    run_command(&["cal", "-3"], verbose)
 }
 
 
@@ -179,12 +178,12 @@ fn main() -> XResult<()> {
     }
 
     if options.cmd.is_empty() {
-        print_message(MessageType::ERROR, "Use show --help print usage.");
+        failure!("Use show --help print usage.");
         return Ok(());
     }
 
     if options.verbose {
-        print_message(MessageType::INFO, &format!("Command: {}", &options.cmd));
+        information!("Command: {}", &options.cmd);
     }
 
     let linux_and_macos = vec![CommandSupportOS::Linux, CommandSupportOS::MacOS];
@@ -227,7 +226,7 @@ fn main() -> XResult<()> {
         },
         CommandInfo { name: "listen_udp",
             description: "Show udp listen",
-            support_os: linux_and_macos.clone(),
+            support_os: linux_and_macos,
             command_fn: show_listen_udp,
         },
         CommandInfo { name: "install_brew",
@@ -276,8 +275,8 @@ fn main() -> XResult<()> {
             }).collect::<Vec<_>>().join(", ");
             println!("{} - {}  [{}]", c.name, c.description, &support_os_str);
         }),
-        other => match commands.iter().filter(|c| c.name == cmd_str).next() {
-            None => print_message(MessageType::ERROR, &format!("Unknown command: {}", other)),
+        other => match commands.iter().find(|c| c.name == cmd_str) {
+            None => failure!("Unknown command: {}", other),
             Some(c) => (c.command_fn)(options.verbose)?,
         },
     }
